@@ -1,0 +1,25 @@
+server {
+    listen       80;
+    server_name  {{{SERVER_NAME}}};
+
+    location /.well-known/ {
+        alias  /usr/share/lego/webroot/.well-known/;
+        allow all;
+    } 
+
+    location / {
+        proxy_pass http://maintenance:8080;
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+
+    error_page   404  /404.html;
+    location = /404.html {
+        root   /usr/share/nginx/html;
+    } 
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}

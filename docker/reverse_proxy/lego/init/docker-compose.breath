@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  lego:
+    image: xenolf/lego
+    command: >
+      --path /lego
+      --email {{{EMAIL}}}
+      --domains {{{DOMAIN}}}
+      --domains {{{WILDCARD}}}
+      --http.webroot /usr/share/lego/webroot
+      --http
+      --accept-tos
+      run
+    volumes:
+      - certs:/lego
+      - webroot:/usr/share/lego/webroot:rw
+
+volumes:
+  webroot:
+    external: true
+  certs:
+    external: true
