@@ -48,6 +48,7 @@ case ${ANSWER2} in
     cat ${SSH_TEMP_CLIENT_KEY} >> ${SSH_AUTHORIZED_KEYS}
     chmod 600 ${SSH_AUTHORIZED_KEYS}
     rm ${SSH_TEMP_CLIENT_KEY}
+    chmod 700 ~/.ssh
 
     echo "SSH public key setting done."
     break
