@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  maintenance:
+    build: maintenance
+    container_name: maintenance
+    volumes:
+      - ./maintenance/html:/usr/share/nginx/html
+      - ./maintenance/conf.d:/etc/nginx/conf.d
+  reverse_proxy:
+    build: reverse_proxy
+    container_name: reverse_proxy
+    depends_on:
+      - maintenance
+    volumes:
+      - ./reverse_proxy/html:/usr/share/nginx/html
+      - ./reverse_proxy/conf.d:/etc/nginx/conf.d
+      - certs:/etc/pki/tls
+      - webroot:/usr/share/lego/webroot
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  certs:
+    external: true
+  webroot:
+    external: true
+
+networks:
+  default:
+    external:
+      name: appnet
