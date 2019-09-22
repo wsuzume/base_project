@@ -87,12 +87,12 @@ case ${ANSWER_SSH_CONFIG} in
     grep "^LogLevel" ${SSH_CONFIG}
 
     # TCP Port Forwarding
-    #change_setting ${SSH_CONFIG} AllowTcpForwarding no
-    #grep "^AllowTcpForwarding" ${SSH_CONFIG}
+    change_setting ${SSH_CONFIG} AllowTcpForwarding no
+    grep "^AllowTcpForwarding" ${SSH_CONFIG}
 
     # AllowStreamLocalForwarding
-    #change_setting ${SSH_CONFIG} AllowStreamLocalForwarding no
-    #grep "^AllowStreamLocalForwarding" ${SSH_CONFIG}
+    change_setting ${SSH_CONFIG} AllowStreamLocalForwarding no
+    grep "^AllowStreamLocalForwarding" ${SSH_CONFIG}
 
     # GatewayPorts
     #change_setting ${SSH_CONFIG} GatewayPorts no
@@ -190,6 +190,35 @@ case ${ANSWER_FW_CONFIG} in
       echo
       cat ${FW_SSH_CONFIG_ANOTHER_PORT}
     fi
+
+    set -x
+    ## These settings are using http://www.yam-web.net/centos7/direct-rule/index.html as a reference.
+    ######syn-flood:DROP######
+    firewall-cmd --permanent --direct --add-chain ipv4 filter syn-flood
+    firewall-cmd --permanent --direct --add-rule ipv4 filter INPUT 100 -i enp0 -p icmp --icmp-type echo-request -j syn-flood
+    firewall-cmd --permanent --direct --add-rule ipv4 filter syn-flood 150 -m limit --limit 1/s --limit-burst 4 -j RETURN
+    firewall-cmd --permanent --direct --add-rule ipv4 filter syn-flood 151 -j LOG --log-prefix "IPTABLES SYN-FLOOD:"
+    firewall-cmd --permanent --direct --add-rule ipv4 filter syn-flood 152 -j DROP
+
+    ######Make sure NEW tcp connections are SYN packets:DROP######
+    firewall-cmd --permanent --direct --add-rule ipv4 filter INPUT 200 -i enp0 -p tcp ! --syn -m state --state NEW -j LOG --log-prefix "IPTABLES SYN-FLOOD:"
+    firewall-cmd --permanent --direct --add-rule ipv4 filter INPUT 201 -p tcp ! --syn -m state --state NEW -j DROP
+
+    ######ping of death:DROP######
+    firewall-cmd --permanent --direct --add-chain ipv4 filter ping-death
+    firewall-cmd --permanent --direct --add-rule ipv4 filter INPUT 300 -i enp0 -p icmp --icmp-type echo-request -j ping-death
+    firewall-cmd --permanent --direct --add-rule ipv4 filter ping-death 350 -m limit --limit 1/s --limit-burst 4 -j RETURN
+    firewall-cmd --permanent --direct --add-rule ipv4 filter ping-death 351 -j LOG --log-prefix "IPTABLES PING-DEATH:"
+    firewall-cmd --permanent --direct --add-rule ipv4 filter ping-death 352 -j DROP
+
+    ######port-scan:DROP######
+    firewall-cmd --permanent --direct --add-chain ipv4 filter port-scan
+    firewall-cmd --permanent --direct --add-rule ipv4 filter INPUT 400 -i enp0 -p tcp --tcp-flags SYN,ACK,FIN,RST RST -j port-scan
+    firewall-cmd --permanent --direct --add-rule ipv4 filter port-scan 450 -m limit --limit 1/s --limit-burst 4 -j RETURN
+    firewall-cmd --permanent --direct --add-rule ipv4 filter port-scan 451 -j LOG --log-prefix "IPTABLES PORT-SCAN:"
+    firewall-cmd --permanent --direct --add-rule ipv4 filter port-scan 452 -j DROP
+
+    set +x
 
     break
     ;;
