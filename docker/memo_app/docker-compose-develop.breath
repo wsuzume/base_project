@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  memo_app_mysql:
+    build: mysql
+    container_name: memo_app_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: {{{MYSQL_ROOT_PASSWORD}}}
+      MYSQL_DATABASE: {{{MYSQL_DATABASE}}}
+      MYSQL_USER: {{{MYSQL_USER}}}
+      MYSQL_PASSWORD: {{{MYSQL_PASSWORD}}}
+      TZ: 'Asia/Tokyo'
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql
+      - ./mysql/initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
+
+  memo_app_redis:
+    build: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - "./redis/data:/data"
+    sysctls:
+      - net.core.somaxconn=1024
+# This setting can be enabled if Docker host's global kernel parameter is vm.overcomiit_memory=1
+# Consider `sysctl vm.overcommit_memory=1 on your host.`
+#      - vm.overcommit_memory=1
+
+  api_server:
+    build: api_server
+    depends_on:
+      - memo_app_mysql
+      - memo_app_redis
+    volumes:
+      - ./api_server/go/src/memo_app:/go/src/memo_app
+    ports:
+      - "8080:8080"
+
